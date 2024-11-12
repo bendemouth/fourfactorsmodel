@@ -1,0 +1,658 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+% definitions for citeproc citations
+\NewDocumentCommand\citeproctext{}{}
+\NewDocumentCommand\citeproc{mm}{%
+  \begingroup\def\citeproctext{#2}\cite{#1}\endgroup}
+\makeatletter
+ % allow citations to break across lines
+ \let\@cite@ofmt\@firstofone
+ % avoid brackets around text for \cite:
+ \def\@biblabel#1{}
+ \def\@cite#1#2{{#1\if@tempswa , #2\fi}}
+\makeatother
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newlength{\csllabelwidth}
+\setlength{\csllabelwidth}{3em}
+\newenvironment{CSLReferences}[2] % #1 hanging-indent, #2 entry-spacing
+ {\begin{list}{}{%
+  \setlength{\itemindent}{0pt}
+  \setlength{\leftmargin}{0pt}
+  \setlength{\parsep}{0pt}
+  % turn on hanging indent if param 1 is 1
+  \ifodd #1
+   \setlength{\leftmargin}{\cslhangindent}
+   \setlength{\itemindent}{-1\cslhangindent}
+  \fi
+  % set entry spacing
+  \setlength{\itemsep}{#2\baselineskip}}}
+ {\end{list}}
+\usepackage{calc}
+\newcommand{\CSLBlock}[1]{\hfill\break\parbox[t]{\linewidth}{\strut\ignorespaces#1\strut}}
+\newcommand{\CSLLeftMargin}[1]{\parbox[t]{\csllabelwidth}{\strut#1\strut}}
+\newcommand{\CSLRightInline}[1]{\parbox[t]{\linewidth - \csllabelwidth}{\strut#1\strut}}
+\newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={R Notebook},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{R Notebook}
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}\label{introduction}
+
+The impetus for this project came after reading about Bill Connelly's
+work on the SP+ rating system for college
+football(\citeproc{ref-ConnellySP}{\textbf{ConnellySP?}}, +). SP+ uses
+five tempo-adjusted team statistics to rank teams both offensively and
+defensively. The ``Five Factors'' he uses are efficiency, explosiveness,
+field position, finishing drives, and turnovers.
+
+The key phrase that sparked my imagination was ``Five Factors''. For me,
+it called back to the book Basketball on Paper by Dean Oliver, wherein
+Oliver states that there are Four Factors that determine a basketball
+team's success (\citeproc{ref-BasketballOnPaper}{Oliver 2011}). Those
+Four Factors, according to Oliver are field goal shooting, turnovers,
+rebounding, and free throws.
+
+My thinking was that I could use similar tempo-adjusted basketball
+statistics and create a model to project team success for basketball
+teams.
+
+\section{The Data}\label{the-data}
+
+College basketball data is widely available on the internet, and the
+easiest place to gather large amounts of data is
+basketball-reference.com. All data for this project is courtesy of them.
+
+Data was gathered using the Get Table as CSV function on the
+basketball-reference website on the pages for school stats in the
+2023-24 season summary pages for the men's and women's seasons
+respectively(\citeproc{ref-BasketballReference}{Sports Reference 2024}).
+
+The first thing that we need to do is bring data in that we can work
+with. The team data and opponent data are in two separate tables, so we
+need to bind the columns together to make on cohesive data frame, then
+drop and the duplicate school column. The tables are all in alphabetical
+order by school name, so we do not need to worry about adding any other
+sort function. We will also be using a host of different libraries
+native to R to help with data manipulation, cleaning, visualization, and
+model building.
+
+Once we have our data combined into one data frame for men's and one
+data frame for women's, we need to apply mutations to get our
+tempo-adjusted efficiency stats.
+
+A note on the formula used for estimating possessions: different
+statisticians will use different formulas for estimating possessions.
+Free throws get difficult because not all trips to the free throw line
+are take end a possession. Further, not all free throw attempts come
+from possessions. Different studies have come up with different numbers
+for how many free throws actually end a possession. There are two shot
+free throws and there are one-and-ones. Sometimes there is no rebound
+when the ball gets tipped out of bounds. All this to demonstrate that
+there is no super clean way to account for free throws.
+
+To that end, I've decided to go with the formula that is used by
+statistician Ken Pomeroy, one of the most widely respected data
+scientists in the world of college hoops, and using his recommendation
+of John Hollinger's free-throw coefficient of 0.44
+(\citeproc{ref-PomeroyPoss}{Pomeroy 2004}).
+
+\subsection{Formulas and Explanations for Tempo-Adjusted
+Statistics}\label{formulas-and-explanations-for-tempo-adjusted-statistics}
+
+\subsubsection{Possessions}\label{possessions}
+
+Possessions are an estimation of how many times a team possess the
+basketball. As discusses above, there are different ways of doing this.
+The formula we are using is as follows:
+
+\[
+\text{Possessions} = (\text{FGA} - \text{ORB}) + \text{Turnovers} + (0.44 \times \text{FTA})
+\]
+
+\subsubsection{Effective Field Goal \%
+(eFG\%)}\label{effective-field-goal-efg}
+
+eFG\% is a way to measure a team's field goal shooting efficiency. It
+accounts for the fact that a three-point field goal is worth 50\% more
+than a two-point field goal. To demonstrate, a team can score six points
+by making three two-point field goals, or they can score the same six
+points by making two three-point field goals. The team that scores by
+making three-point shots is more efficient.
+
+\[
+\text{eFG%} = \frac{\text{FGM} + (0.5 \times \text{3PtFGM})}{\text{FGA}}
+\]
+
+\subsubsection{Turnover Rate (TOV\%)}\label{turnover-rate-tov}
+
+Turnover rate measures the percentage of a team's possessions that end
+in a turnover. Using TOV\% instead of raw turnover numbers adjusts for
+pace of play, because a team that plays at a faster pace has more
+opportunities to turn the ball over.
+
+\[
+\text{TOV%} = \frac{\text{TOV}}{\text{Poss}}
+\]
+
+\subsubsection{Rebounding Rate}\label{rebounding-rate}
+
+Rebounding rate measures what percentage of available rebounds a team
+brought in on either end of the floor. For example, if a team missed 10
+shots and they got 2 offensive rebounds, they would have an offensive
+rebounding rate of 20\%. A team's offensive rebounding rate and their
+opponent's defensive rebounding rate will always equal 1.
+
+\[
+\text{ORB%} = \frac{\text{ORB}}{\text{ORB} + \text{Opponent DRB}}
+\]
+
+\[
+\text{DRB%} = \frac{\text{DRB}}{\text{DRB} + \text{Opponent ORB}}
+\]
+
+\subsubsection{Free Throw Rate (FTRte)}\label{free-throw-rate-ftrte}
+
+The final tempo-adjusted statistic we'll be using is free throw rate,
+not to be confused with free throw percentage. FTRte is a ratio of a
+teams free throw attempts to their field goal attempts. Free throws are
+always the most efficient offense, even for teams that are relatively
+bad shooters from the charity stripe. Some statisticians will use free
+throw makes divided by field goal attempts, but because we are looking
+at efficiency numbers and, again, free throws are always efficient, we
+will use free throw attempts.
+
+\[
+\text{FTRte} = \frac{\text{FTA}}{\text{FGA}}
+\]
+
+\subsection{Data Preparation}\label{data-preparation}
+
+\subsubsection{Assumptions of Normality}\label{assumptions-of-normality}
+
+The first thing we need to do when making a model is check that all of
+our data is normally distributed. A basic assumption of nearly all
+machine learning models is that variables are both independent from each
+other and normally distributed under a Gaussian Curve (also called a
+bell curve)(\citeproc{ref-Lehmann_2011}{Lehmann 2011}). The
+distributions of our data are shown below, with men's data shown in blue
+and women's data shown in green.
+
+\includegraphics{DER_Rankings_files/figure-latex/unnamed-chunk-3-1.pdf}
+
+All of the data we have is nearly normally distributed. Some of the
+statistics have tails to them, but after our scaling, those tails will
+be taken care of.
+
+\subsubsection{Scaling}\label{scaling}
+
+Now that we have established that our data are normally distributed, a
+note on magnitude. All of the data we are using in this model are
+expressed as percentages. However, what is considered ``good'' in a
+particular statistic, may not be considered ``good'' in another.
+
+To demonstrate, Texas A\&M led men's basketball in offensive rebounding
+rate at 42.25\%. Meanwhile, St.~Mary's led men's basketball in defensive
+rebounding rate at 77.93\%. Both of these are rebounding statistics and
+tops in the same division. However, those numbers are nowhere near each
+other.
+
+Therefore, we need to scale our data. We scale these by finding the mean
+of each statistic and finding out out how many standard deviations away
+from the mean each observation is. In statistics, this is also known as
+finding the Z-Score.
+
+The first ten teams are listed alphabetically below with their scaled
+data in each category.
+
+\begin{verbatim}
+## # A tibble: 10 x 11
+##    Team              scaled_tmefg[,1] scaled_tmtovrte[,1] scaled_tmastrte[,1]
+##    <chr>                        <dbl>               <dbl>               <dbl>
+##  1 Abilene Christian          -1.03                0.367              -0.600 
+##  2 Air Force                   1.07                0.889               1.30  
+##  3 Akron NCAA                  0.451              -0.125               0.0260
+##  4 Alabama NCAA                1.86               -0.576               0.806 
+##  5 Alabama A&M                -1.72                2.72               -1.71  
+##  6 Alabama State              -2.93               -0.578              -1.51  
+##  7 Albany (NY)                -0.0486              0.335              -0.819 
+##  8 Alcorn State               -0.709              -0.0347             -0.845 
+##  9 American                    0.691              -0.0324              1.03  
+## 10 Appalachian State           0.649              -0.953               0.525 
+## # i 7 more variables: scaled_orbrte <dbl[,1]>, scaled_tmftrte <dbl[,1]>,
+## #   scaled_oppefg <dbl[,1]>, scaled_opptovrte <dbl[,1]>,
+## #   scaled_oppastrte <dbl[,1]>, scaled_drbrte <dbl[,1]>,
+## #   scaled_oppftrte <dbl[,1]>
+\end{verbatim}
+
+As you can see in the table above, we now have z-scores for all of the
+statistics we are using and we can move forward with optimizing the
+weights for each.
+
+\subsection{Optimization}\label{optimization}
+
+I've written an objective function that will take different weights as
+parameters and return the squared errors of the given weights. We'll
+start with using Oliver's weights and we can use the optim() function in
+R to give us the optimal results.
+
+First, though, we need to split our data into testing data and training
+data. We'll be using an 80/20 split.
+
+\begin{verbatim}
+## Men's training data sample: 289
+\end{verbatim}
+
+\begin{verbatim}
+## Men's test data sample: 73
+\end{verbatim}
+
+\begin{verbatim}
+## Women's training data sample 288
+\end{verbatim}
+
+\begin{verbatim}
+## Women's test data samle: 72
+\end{verbatim}
+
+There are two ways that we'll try to optimize this. The first will be
+with keeping Oliver's weights for both the offensive and defensive sides
+of the ball. The second will be to divide the weights by two. My
+thinking on this is that there are two halves to all of the statistics
+that we are looking at - the offensive and defensive sides of the ball.
+
+\subsubsection{Full Weight Results}\label{full-weight-results}
+
+Here first are the optimization results from using Oliver's full weights
+for the men's data.
+
+\begin{verbatim}
+## $par
+## [1]  0.103323623 -0.001901011  0.010393731  0.035452765 -0.064947905
+## [6]  0.043372778  0.015801769 -0.049393016
+## 
+## $value
+## [1] 77.37966
+## 
+## $counts
+## function gradient 
+##     2981       NA 
+## 
+## $convergence
+## [1] 0
+## 
+## $message
+## NULL
+\end{verbatim}
+
+Here now are the optimization results from using Oliver's full weights
+on the women's data.
+
+\begin{verbatim}
+## $par
+## [1]  0.08042503 -0.03380477  0.01840766  0.02992546 -0.07254362  0.07386022
+## [7]  0.06501971 -0.02948148
+## 
+## $value
+## [1] 74.07852
+## 
+## $counts
+## function gradient 
+##     2191       NA 
+## 
+## $convergence
+## [1] 0
+## 
+## $message
+## NULL
+\end{verbatim}
+
+The coefficients for each statistic are listed in the \$par section of
+the output. In order they represent offensive eFG\%, offensive TOV\%,
+ORB\%, offensive FTRte, opponent eFG\%, opponent TOV\%, DRB\%, and
+opponent FTRte.
+
+The \$value section of the output gives us our mean square error for
+each model, and the \$counts section tells hows how many iterations it
+took for the function to converge to a solution.
+
+Finally, the \$convergence value of 0 tells us that the optim() function
+did successfully converge to a solution.
+
+\subsubsection{Half-Weight Results}\label{half-weight-results}
+
+Now for testing with cutting the weights in half to account for the fact
+that there is shooting, rebounding, turnover, and free throws on both
+ends of the floor.
+
+These are the results of the optimization function with the men's data.
+
+\begin{verbatim}
+## $par
+## [1]  0.103198972 -0.002379747  0.011174447  0.034460830 -0.066014589
+## [6]  0.042081009  0.014982126 -0.047848824
+## 
+## $value
+## [1] 77.37927
+## 
+## $counts
+## function gradient 
+##     1079       NA 
+## 
+## $convergence
+## [1] 0
+## 
+## $message
+## NULL
+\end{verbatim}
+
+And here are the results of the optimization function for the women's
+data, starting with half of Oliver's suggested weights as parameters.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{half\_weight\_results\_womens}\OtherTok{\textless{}{-}} \FunctionTok{optim}\NormalTok{(}\AttributeTok{par =}\NormalTok{ weights\_half, }\AttributeTok{fn =}\NormalTok{ womens\_obj\_fun, }\AttributeTok{control =} \FunctionTok{list}\NormalTok{(}\AttributeTok{maxit=}\DecValTok{5000}\NormalTok{))}
+
+\FunctionTok{print}\NormalTok{(half\_weight\_results\_womens)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## $par
+## [1]  0.06082867  0.02612598 -0.01738069  0.02839132 -0.04682894  0.07880166
+## [7]  0.13116099 -0.02424620
+## 
+## $value
+## [1] 75.37763
+## 
+## $counts
+## function gradient 
+##     1831       NA 
+## 
+## $convergence
+## [1] 0
+## 
+## $message
+## NULL
+\end{verbatim}
+
+\subsection{Comparisons}\label{comparisons}
+
+Now that we have a couple of different models to work with, given the
+coefficients from the optim() function, we can start to look at which is
+the most accurate.
+
+\includegraphics{DER_Rankings_files/figure-latex/unnamed-chunk-11-1.pdf}
+
+\includegraphics{DER_Rankings_files/figure-latex/unnamed-chunk-12-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{RSS\_full\_mens }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{((comparison\_df\_mens}\SpecialCharTok{$}\NormalTok{residuals\_full\_mens)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+\NormalTok{RSS\_half\_mens }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{((comparison\_df\_mens}\SpecialCharTok{$}\NormalTok{residuals\_half\_mens)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+\NormalTok{tss\_mens}\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{((comparison\_df\_mens}\SpecialCharTok{$}\NormalTok{Actual\_mens }\SpecialCharTok{{-}} \FunctionTok{mean}\NormalTok{(comparison\_df\_mens}\SpecialCharTok{$}\NormalTok{Actual\_mens))}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+
+\NormalTok{RSquared\_full\_mens}\OtherTok{\textless{}{-}} \DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ (RSS\_full\_mens }\SpecialCharTok{/}\NormalTok{ tss\_mens)}
+\NormalTok{RSquared\_half\_mens}\OtherTok{\textless{}{-}} \DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ (RSS\_half\_mens }\SpecialCharTok{/}\NormalTok{ tss\_mens)}
+
+\NormalTok{RSS\_full\_womens}\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{((comparison\_df\_womens}\SpecialCharTok{$}\NormalTok{residuals\_full\_womens)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+\NormalTok{RSS\_half\_womens}\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{((comparison\_df\_womens}\SpecialCharTok{$}\NormalTok{residuals\_half\_womens)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+\NormalTok{tss\_womens}\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{((comparison\_df\_womens}\SpecialCharTok{$}\NormalTok{actual\_womens }\SpecialCharTok{{-}} \FunctionTok{mean}\NormalTok{(comparison\_df\_womens}\SpecialCharTok{$}\NormalTok{actual\_womens))}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+
+\NormalTok{RSquared\_full\_womens}\OtherTok{\textless{}{-}} \DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ (RSS\_full\_womens }\SpecialCharTok{/}\NormalTok{ tss\_womens)}
+\NormalTok{RSquared\_half\_womens}\OtherTok{\textless{}{-}} \DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ (RSS\_half\_womens }\SpecialCharTok{/}\NormalTok{ tss\_womens)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"RSquared Full Mens"}\NormalTok{, RSquared\_full\_mens, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## RSquared Full Mens 0.7505244
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"RSquared Half Mens"}\NormalTok{, RSquared\_half\_mens, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## RSquared Half Mens 0.7548984
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"RSquared Full Womens"}\NormalTok{, RSquared\_full\_womens, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## RSquared Full Womens 0.8793414
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"RSquared Half Womens"}\NormalTok{, RSquared\_half\_womens)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## RSquared Half Womens 0.673606
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{7560}\NormalTok{)}
+
+\NormalTok{train\_control}\OtherTok{\textless{}{-}} \FunctionTok{trainControl}\NormalTok{(}\AttributeTok{method =} \StringTok{"repeatedcv"}\NormalTok{, }\AttributeTok{number =} \DecValTok{20}\NormalTok{, }\AttributeTok{repeats =} \DecValTok{5}\NormalTok{)}
+
+\NormalTok{womens\_test\_model}\OtherTok{\textless{}{-}} \FunctionTok{train}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{W{-}L\%}\StringTok{\textasciigrave{}} \SpecialCharTok{\textasciitilde{}}\NormalTok{ scaled\_tmefg }\SpecialCharTok{+}\NormalTok{ scaled\_tmtovrte }\SpecialCharTok{+}\NormalTok{ scaled\_orbrte }\SpecialCharTok{+}\NormalTok{ scaled\_tmftrte }\SpecialCharTok{+}\NormalTok{ scaled\_oppefg }\SpecialCharTok{+}\NormalTok{ scaled\_opptovrte }\SpecialCharTok{+}\NormalTok{ scaled\_drbrte }\SpecialCharTok{+}\NormalTok{ scaled\_oppftrte, }\AttributeTok{data =}\NormalTok{ womens\_stats, }\AttributeTok{method =} \StringTok{"lm"}\NormalTok{, }\AttributeTok{trControl =}\NormalTok{ train\_control)}
+
+\FunctionTok{summary}\NormalTok{(womens\_test\_model)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = .outcome ~ ., data = dat)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.156655 -0.043869  0.000797  0.039471  0.201642 
+## 
+## Coefficients:
+##                   Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)       0.505697   0.003201 157.957  < 2e-16 ***
+## scaled_tmefg      0.083812   0.004271  19.624  < 2e-16 ***
+## scaled_tmtovrte  -0.055410   0.003976 -13.936  < 2e-16 ***
+## scaled_orbrte     0.030309   0.003558   8.520 4.78e-16 ***
+## scaled_tmftrte    0.020978   0.003297   6.362 6.21e-10 ***
+## scaled_oppefg    -0.069525   0.003625 -19.178  < 2e-16 ***
+## scaled_opptovrte  0.057928   0.004079  14.203  < 2e-16 ***
+## scaled_drbrte     0.027984   0.004457   6.279 1.01e-09 ***
+## scaled_oppftrte  -0.026974   0.004065  -6.635 1.23e-10 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.06074 on 351 degrees of freedom
+## Multiple R-squared:  0.9053, Adjusted R-squared:  0.9032 
+## F-statistic: 419.5 on 8 and 351 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{mens\_test\_model}\OtherTok{\textless{}{-}} \FunctionTok{train}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{W{-}L\%}\StringTok{\textasciigrave{}} \SpecialCharTok{\textasciitilde{}}\NormalTok{ scaled\_tmefg }\SpecialCharTok{+}\NormalTok{ scaled\_tmtovrte }\SpecialCharTok{+}\NormalTok{ scaled\_orbrte }\SpecialCharTok{+}\NormalTok{ scaled\_tmftrte }\SpecialCharTok{+}\NormalTok{ scaled\_oppefg }\SpecialCharTok{+}\NormalTok{ scaled\_opptovrte }\SpecialCharTok{+}\NormalTok{ scaled\_drbrte }\SpecialCharTok{+}\NormalTok{ scaled\_oppftrte, }\AttributeTok{data =}\NormalTok{ mens\_stats, }\AttributeTok{method =} \StringTok{"lm"}\NormalTok{, }\AttributeTok{trControl =}\NormalTok{ train\_control)}
+
+\FunctionTok{summary}\NormalTok{(mens\_test\_model)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = .outcome ~ ., data = dat)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.167871 -0.035880 -0.000441  0.036424  0.214206 
+## 
+## Coefficients:
+##                   Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)       0.515392   0.003137 164.317  < 2e-16 ***
+## scaled_tmefg      0.070940   0.003665  19.358  < 2e-16 ***
+## scaled_tmtovrte  -0.051739   0.003595 -14.391  < 2e-16 ***
+## scaled_orbrte     0.036219   0.003506  10.332  < 2e-16 ***
+## scaled_tmftrte    0.031285   0.003456   9.053  < 2e-16 ***
+## scaled_oppefg    -0.065424   0.003560 -18.378  < 2e-16 ***
+## scaled_opptovrte  0.046049   0.004087  11.268  < 2e-16 ***
+## scaled_drbrte     0.019674   0.003751   5.245 2.70e-07 ***
+## scaled_oppftrte  -0.028077   0.004265  -6.583 1.67e-10 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.05968 on 353 degrees of freedom
+## Multiple R-squared:  0.8733, Adjusted R-squared:  0.8704 
+## F-statistic: 304.2 on 8 and 353 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\phantomsection\label{refs}
+\begin{CSLReferences}{1}{0}
+\bibitem[\citeproctext]{ref-Lehmann_2011}
+Lehmann, E. L. 2011. {``On the History and Use of Some Standard
+Statistical Models.''} \emph{Selected Works of E. L. Lehmann}, November,
+1019--31. \url{https://doi.org/10.1007/978-1-4614-1412-4_85}.
+
+\bibitem[\citeproctext]{ref-BasketballOnPaper}
+Oliver, Dean. 2011. \emph{Basketball on Paper: Rules and Tools for
+Performance Analysis}. Potomac Books, Inc.
+
+\bibitem[\citeproctext]{ref-PomeroyPoss}
+Pomeroy, Ken. 2004. {``The Possession.''} \emph{Kenpom.com}.
+\url{https://kenpom.com/blog/the-possession/}.
+
+\bibitem[\citeproctext]{ref-BasketballReference}
+Sports Reference, LLC. 2024. {``College Basketball School Stats.''}
+\url{https://www.basketball-reference.com/10-21-2024}.
+
+\end{CSLReferences}
+
+\end{document}

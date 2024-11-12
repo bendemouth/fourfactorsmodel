@@ -1,0 +1,809 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+bibliography: references.bib
+link-citations: true
+---
+
+# Introduction
+
+The impetus for this project came after reading about Bill Connelly’s work on the SP+ rating system for college football[@ConnellySP]. SP+ uses five tempo-adjusted team statistics to rank teams both offensively and defensively. The “Five Factors” he uses are efficiency, explosiveness, field position, finishing drives, and turnovers.
+
+The key phrase that sparked my imagination was “Five Factors”. For me, it called back to the book Basketball on Paper by Dean Oliver, wherein Oliver states that there are Four Factors that determine a basketball team’s success [@BasketballOnPaper]. Those Four Factors, according to Oliver are field goal shooting, turnovers, rebounding, and free throws.
+
+My thinking was that I could use similar tempo-adjusted basketball statistics and create a model to project team success for basketball teams.
+
+# The Data
+
+College basketball data is widely available on the internet, and the easiest place to gather large amounts of data is basketball-reference.com. All data for this project is courtesy of them.
+
+Data was gathered using the Get Table as CSV function on the basketball-reference website on the pages for school stats in the 2023-24 season summary pages for the men’s and women’s seasons respectively[@BasketballReference].
+
+The first thing that we need to do is bring data in that we can work with. The team data and opponent data are in two separate tables, so we need to bind the columns together to make on cohesive data frame, then drop and the duplicate school column. The tables are all in alphabetical order by school name, so we do not need to worry about adding any other sort function. We will also be using a host of different libraries native to R to help with data manipulation, cleaning, visualization, and model building.
+
+```{r, message=FALSE, echo=FALSE}
+library(dplyr)
+library(tidyr)
+library(readr)
+library(ggplot2)
+library(gridExtra)
+library(caret)
+library(gt)
+
+mens_opp <- read_csv("Data/2024_Mens_PerGame_Opp.csv")
+mens_team <- read_csv("Data/2024_Mens_PerGame_Team.csv")
+womens_opp <- read_csv("Data/2024_Womens_PerGame_Opp.csv")
+womens_team <- read_csv("Data/2024_Womens_PerGame_Team.csv")
+
+mens_stats<- bind_cols(mens_team, mens_opp) 
+womens_stats<- bind_cols(womens_team, womens_opp)
+
+mens_stats<- mens_stats |>
+  select(-`School...22`) |>
+  rename("Team" = `School...1`) |>
+  mutate(Team = gsub(" NCAA", "", Team))
+
+womens_stats<- womens_stats |>
+  select(-`School...22`) |>
+  rename("Team" = `School...1`)|>
+  mutate(Team = gsub(" NCAA", "", Team))
+```
+
+Once we have our data combined into one data frame for men's and one data frame for women's, we need to apply mutations to get our tempo-adjusted efficiency stats.
+
+A note on the formula used for estimating possessions: different statisticians will use different formulas for estimating possessions. Free throws get difficult because not all trips to the free throw line are take end a possession. Further, not all free throw attempts come from possessions. Different studies have come up with different numbers for how many free throws actually end a possession. There are two shot free throws and there are one-and-ones. Sometimes there is no rebound when the ball gets tipped out of bounds. All this to demonstrate that there is no super clean way to account for free throws.
+
+To that end, I've decided to go with the formula that is used by statistician Ken Pomeroy, one of the most widely respected data scientists in the world of college hoops, and using his recommendation of John Hollinger's free-throw coefficient of 0.44 [@PomeroyPoss].
+
+```{r, echo=FALSE, message=FALSE}
+FT_COEFF<- 0.44
+
+mens_stats<- mens_stats |>
+  mutate("TmPoss" = (TmFGA - TmORB) + TmTOV + (FT_COEFF * TmFTA),
+         "OppPoss" = (OppFGA - OppORB) + OppTOV + (FT_COEFF * TmFTA),
+         "TmOffRtg" = (TmPts / TmPoss) * 100,
+         "TmDefRtg" = (OppPts / OppPoss) * 100,
+         "TmNetRtg" = TmOffRtg - TmDefRtg,
+         "TmeFG" = (TmFG + (Tm3P * 0.5)) / TmFGA,
+         "OppeFG" = (OppFG + (Opp3P * 0.5)) / OppFGA,
+         "TmFTRte" = TmFTA / TmFGA,
+         "OppFTRte" = OppFTA / OppFGA,
+         "TmTOVRte" = TmTOV / TmPoss,
+         "OppTOVRte" = OppTOV / OppPoss,
+         "TmDRB" = TmTRB - TmORB,
+         "OppDRB" = OppTRB - OppORB,
+         "ORBRte" = TmORB / (TmORB + OppDRB),
+         "DRBRte" = TmDRB / (OppORB + TmDRB),
+         "TmASTRte" = TmAST / TmPoss,
+         "OppASTRte" = OppAST / OppPoss)
+
+womens_stats<- womens_stats |>
+  mutate("TmPoss" = (TmFGA - TmORB) + TmTOV + (FT_COEFF * TmFTA),
+         "OppPoss" = (OppFGA - OppORB) + OppTOV + (FT_COEFF * TmFTA),
+         "TmOffRtg" = (TmPts / TmPoss) * 100,
+         "TmDefRtg" = (OppPts / OppPoss) * 100,
+         "TmNetRtg" = TmOffRtg - TmDefRtg,
+         "TmeFG" = (TmFG + (Tm3P * 0.5)) / TmFGA,
+         "OppeFG" = (OppFG + (Opp3P * 0.5)) / OppFGA,
+         "TmFTRte" = TmFT / TmFGA,
+         "OppFTRte" = OppFT / OppFGA,
+         "TmTOVRte" = TmTOV / TmPoss,
+         "OppTOVRte" = OppTOV / OppPoss,
+         "TmDRB" = TmTRB - TmORB,
+         "OppDRB" = OppTRB - OppORB,
+         "ORBRte" = TmORB / (TmORB + OppDRB),
+         "DRBRte" = TmDRB / (OppORB + TmDRB),
+         "TmASTRte" = TmAST / TmPoss,
+         "OppASTRte" = OppAST / OppPoss)
+```
+
+## Formulas and Explanations for Tempo-Adjusted Statistics
+
+### Possessions
+
+Possessions are an estimation of how many times a team possess the basketball. As discusses above, there are different ways of doing this. The formula we are using is as follows:
+
+$$
+\text{Possessions} = (\text{FGA} - \text{ORB}) + \text{Turnovers} + (0.44 \times \text{FTA})
+$$
+
+### Effective Field Goal % (eFG%)
+
+eFG% is a way to measure a team’s field goal shooting efficiency. It accounts for the fact that a three-point field goal is worth 50% more than a two-point field goal. To demonstrate, a team can score six points by making three two-point field goals, or they can score the same six points by making two three-point field goals. The team that scores by making three-point shots is more efficient.
+
+$$
+\text{eFG%} = \frac{\text{FGM} + (0.5 \times \text{3PtFGM})}{\text{FGA}}
+$$
+
+### Turnover Rate (TOV%)
+
+Turnover rate measures the percentage of a team's possessions that end in a turnover. Using TOV% instead of raw turnover numbers adjusts for pace of play, because a team that plays at a faster pace has more opportunities to turn the ball over.
+
+$$
+\text{TOV%} = \frac{\text{TOV}}{\text{Poss}}
+$$
+
+### Rebounding Rate
+
+Rebounding rate measures what percentage of available rebounds a team brought in on either end of the floor. For example, if a team missed 10 shots and they got 2 offensive rebounds, they would have an offensive rebounding rate of 20%. A team's offensive rebounding rate and their opponent's defensive rebounding rate will always equal 1.
+
+$$
+\text{ORB%} = \frac{\text{ORB}}{\text{ORB} + \text{Opponent DRB}}
+$$
+
+$$
+\text{DRB%} = \frac{\text{DRB}}{\text{DRB} + \text{Opponent ORB}}
+$$
+
+### Free Throw Rate (FTRte)
+
+The final tempo-adjusted statistic we'll be using is free throw rate, not to be confused with free throw percentage. FTRte is a ratio of a teams free throw attempts to their field goal attempts. Free throws are always the most efficient offense, even for teams that are relatively bad shooters from the charity stripe. Some statisticians will use free throw makes divided by field goal attempts, but because we are looking at efficiency numbers and, again, free throws are always efficient, we will use free throw attempts.
+
+$$
+\text{FTRte} = \frac{\text{FTA}}{\text{FGA}}
+$$
+
+## Data Preparation
+
+### Assumptions of Normality
+
+The first thing we need to do when making a model is check that all of our data is normally distributed. A basic assumption of nearly all machine learning models is that variables are both independent from each other and normally distributed under a Gaussian Curve (also called a bell curve)[@Lehmann_2011]. The distributions of our data are shown below, with men's data shown in blue and women's data shown in green.
+
+```{r, echo=FALSE}
+mens_efg_dist<- ggplot(data = mens_stats, aes(x = TmeFG)) +
+  geom_density(fill="lightblue") +
+  theme_minimal() + 
+  labs(title = "Distribution of Team eFG%")
+
+mens_tov_dist<- ggplot(data = mens_stats, aes(x = TmTOVRte)) +
+  geom_density(fill="lightblue") + 
+  theme_minimal() +
+  labs(title = "Distribution of Team TOV Rate")
+
+mens_orb_dist<- ggplot(data = mens_stats, aes(x = ORBRte)) +
+  geom_density(fill="lightblue") + 
+  theme_minimal() +
+  labs(title = "Distribution of Team ORB Rate")
+
+mens_ft_dist<- ggplot(data = mens_stats, aes(x = TmFTRte)) +
+  geom_density(fill="lightblue") + 
+  theme_minimal() +
+  labs(title = "Distribution of Team Free Throw Rate")
+
+mens_opp_efg_dist<- ggplot(data = mens_stats, aes(x = OppeFG)) +
+  geom_density(fill="lightblue") +
+  theme_minimal() + 
+  labs(title = "Distribution of Opponent eFG%")
+
+mens_opp_tov_dist<- ggplot(data = mens_stats, aes(x = OppTOVRte)) +
+  geom_density(fill="lightblue") +
+  theme_minimal() + 
+  labs(title = "Distribution of Opponent TOV Rate")
+
+mens_drb_dist<- ggplot(data = mens_stats, aes(x = DRBRte)) +
+  geom_density(fill="lightblue") +
+  theme_minimal() + 
+  labs(title = "Distribution of DRB Rate")
+
+mens_opp_ft_dist<- ggplot(data = mens_stats, aes(x = OppFTRte)) +
+  geom_density(fill="lightblue") +
+  theme_minimal() + 
+  labs(title = "Distribution of Opponent Free Throw Rate")
+
+#########################################################################
+womens_efg_dist<- ggplot(data = womens_stats, aes(x = TmeFG)) +
+  geom_density(fill="lightgreen") +
+  theme_minimal() + 
+  labs(title = "Distribution of Team eFG%")
+
+womens_tov_dist<- ggplot(data = womens_stats, aes(x = TmTOVRte)) +
+  geom_density(fill="lightgreen") + 
+  theme_minimal() +
+  labs(title = "Distribution of Team TOV Rate")
+
+
+womens_orb_dist<- ggplot(data = womens_stats, aes(x = ORBRte)) +
+  geom_density(fill="lightgreen") + 
+  theme_minimal() +
+  labs(title = "Distribution of Team ORB Rate")
+
+womens_ft_dist<- ggplot(data = womens_stats, aes(x = TmFTRte)) +
+  geom_density(fill="lightgreen") + 
+  theme_minimal() +
+  labs(title = "Distribution of Team Free Throw Rate")
+
+womens_opp_efg_dist<- ggplot(data = womens_stats, aes(x = OppeFG)) +
+  geom_density(fill="lightgreen") +
+  theme_minimal() + 
+  labs(title = "Distribution of Opponent eFG%")
+
+womens_opp_tov_dist<- ggplot(data = womens_stats, aes(x = OppTOVRte)) +
+  geom_density(fill="lightgreen") +
+  theme_minimal() + 
+  labs(title = "Distribution of Opponent TOV Rate")
+
+womens_drb_dist<- ggplot(data = womens_stats, aes(x = DRBRte)) +
+  geom_density(fill="lightgreen") +
+  theme_minimal() + 
+  labs(title = "Distribution of DRB Rate")
+
+womens_opp_ft_dist<- ggplot(data = womens_stats, aes(x = OppFTRte)) +
+  geom_density(fill="lightgreen") +
+  theme_minimal() + 
+  labs(title = "Distribution of Opponent Free Throw Rate")
+
+grid.arrange(mens_efg_dist, mens_tov_dist, mens_orb_dist, mens_ft_dist, mens_opp_efg_dist, mens_opp_tov_dist, mens_drb_dist, mens_opp_ft_dist, womens_efg_dist, womens_tov_dist, womens_orb_dist, womens_ft_dist, womens_opp_efg_dist, womens_opp_tov_dist, womens_drb_dist, womens_opp_ft_dist, nrow=4, ncol=4)
+```
+
+All of the data we have is nearly normally distributed. Some of the statistics have tails to them, but after our scaling, those tails will be taken care of.
+
+### Scaling
+
+Now that we have established that our data are normally distributed, a note on magnitude. All of the data we are using in this model are expressed as percentages. However, what is considered "good" in a particular statistic, may not be considered "good" in another.
+
+To demonstrate, Texas A&M led men's basketball in offensive rebounding rate at 42.25%. Meanwhile, St. Mary's led men's basketball in defensive rebounding rate at 77.93%. Both of these are rebounding statistics and tops in the same division. However, those numbers are nowhere near each other.
+
+Therefore, we need to scale our data. We scale these by finding the mean of each statistic and finding out out how many standard deviations away from the mean each observation is. In statistics, this is also known as finding the Z-Score.
+
+The first ten teams are listed alphabetically below with their scaled data in each category.
+
+```{r, echo=FALSE}
+mens_stats$scaled_tmefg<- scale(mens_stats$TmeFG)
+mens_stats$scaled_tmtovrte<- scale(mens_stats$TmTOVRte)
+mens_stats$scaled_orbrte<- scale(mens_stats$ORBRte)
+mens_stats$scaled_tmftrte<- scale(mens_stats$TmFTRte)
+
+mens_stats$scaled_oppefg<- scale(mens_stats$OppeFG)
+mens_stats$scaled_opptovrte<- scale(mens_stats$OppTOVRte)
+mens_stats$scaled_drbrte<- scale(mens_stats$DRBRte)
+mens_stats$scaled_oppftrte<- scale(mens_stats$OppFTRte)
+
+#####################################################################
+
+womens_stats$scaled_tmefg<- scale(womens_stats$TmeFG)
+womens_stats$scaled_tmtovrte<- scale(womens_stats$TmTOVRte)
+womens_stats$scaled_tmastrte<- scale(womens_stats$TmASTRte)
+womens_stats$scaled_orbrte<- scale(womens_stats$ORBRte)
+womens_stats$scaled_tmftrte<- scale(womens_stats$TmFTRte)
+
+womens_stats$scaled_oppefg<- scale(womens_stats$OppeFG)
+womens_stats$scaled_opptovrte<- scale(womens_stats$OppTOVRte)
+womens_stats$scaled_oppastrte<- scale(womens_stats$OppASTRte)
+womens_stats$scaled_drbrte<- scale(womens_stats$DRBRte)
+womens_stats$scaled_oppftrte<- scale(womens_stats$OppFTRte)
+
+mens_scaled_table<- mens_stats |> select(Team, scaled_tmefg, scaled_tmtovrte, scaled_orbrte, scaled_tmftrte, scaled_oppefg, scaled_opptovrte, scaled_drbrte, scaled_oppftrte) |> slice_head(n = 10)
+
+mens_scaled_table |> gt() |>
+  cols_label(scaled_tmefg = "Team eFG%",
+             scaled_tmtovrte = "Team TOV%",
+             scaled_orbrte = "ORB%",
+             scaled_tmftrte = "Team FTRte",
+             scaled_oppefg  = "Opp. eFG%",
+             scaled_opptovrte = "Opp. TOV%",
+             scaled_drbrte = "DRB%",
+             scaled_oppftrte = "Opp. FTRte") |>
+  tab_header(title = "Scaled Data for Modeling") |>
+  tab_style(style = cell_text(color = "black", weight = "bold", align = "left"),
+            locations = cells_title("title")) |>
+  tab_style(
+     locations = cells_column_labels(columns = everything()),
+     style = list(
+       cell_borders(sides = "bottom", weight = px(3)),
+       cell_text(weight = "bold", size=12)
+     )
+   ) |>
+  opt_row_striping() |>
+  fmt_number(columns = everything(), decimals = 2)
+
+```
+
+As you can see in the table above, we now have z-scores for all of the statistics we are using and we can move forward with optimizing the weights for each.
+
+## Optimization
+
+I've written an objective function that will take different weights as parameters and return the squared errors of the given weights. We'll start with using Oliver's weights and we can use the optim() function in R to give us the optimal results.
+
+```{r, echo=FALSE}
+mens_obj_fun <- function(weight) {
+  predicted_wpct <- (weight[1] * mens_train_data$scaled_tmefg) +
+                    (weight[2] * mens_train_data$scaled_tmtovrte) +
+                    (weight[3] * mens_train_data$scaled_orbrte) +
+                    (weight[4] * mens_train_data$scaled_tmftrte) +
+                    (weight[5] * mens_train_data$scaled_oppefg) +
+                    (weight[6] * mens_train_data$scaled_opptovrte) +
+                    (weight[7] * mens_train_data$scaled_drbrte) +
+                    (weight[8] * mens_train_data$scaled_oppftrte)
+  
+  error <- sum((predicted_wpct - mens_train_data$`W-L%`)^2)
+  return(error)
+}
+
+##############################################################################
+womens_obj_fun <- function(weight) {
+  predicted_wpct <- (weight[1] * womens_train_data$scaled_tmefg) +
+                    (weight[2] * womens_train_data$scaled_tmtovrte) +
+                    (weight[3] * womens_train_data$scaled_orbrte) +
+                    (weight[4] * womens_train_data$scaled_tmftrte) +
+                    (weight[5] * womens_train_data$scaled_oppefg) +
+                    (weight[6] * womens_train_data$scaled_opptovrte) +
+                    (weight[7] * womens_train_data$scaled_drbrte) +
+                    (weight[8] * womens_train_data$scaled_oppftrte)
+  
+  error <- sum((predicted_wpct - womens_train_data$`W-L%`)^2)
+  return(error)
+}
+
+
+```
+
+First, though, we need to split our data into testing data and training data. We'll be using an 80/20 split.
+
+```{r, echo=FALSE}
+set.seed(1234)
+
+mens_train_rows<- sample(1:nrow(mens_stats), size = (0.8 * nrow(mens_stats)))
+
+mens_train_data<- mens_stats[mens_train_rows, ]
+mens_test_data<-mens_stats[-mens_train_rows, ]
+
+################################################################################
+
+womens_train_rows<- sample(1:nrow(womens_stats), size = (0.8 * nrow(womens_stats)))
+
+womens_train_data<- womens_stats[womens_train_rows, ]
+womens_test_data<- womens_stats[-womens_train_rows, ]
+
+cat("Men's training data sample:", nrow(mens_train_data), "\n")
+cat("Men's test data sample:", nrow(mens_test_data), "\n")
+cat("Women's training data sample", nrow(womens_train_data), "\n")
+cat("Women's test data samle:", nrow(womens_test_data))
+```
+
+There are two ways that we'll try to optimize this. The first will be with keeping Oliver's weights for both the offensive and defensive sides of the ball. The second will be to divide the weights by two. My thinking on this is that there are two halves to all of the statistics that we are looking at - the offensive and defensive sides of the ball.
+
+### Full Weight Results
+
+Here first are the optimization results from using Oliver's full weights for the men's data.
+
+```{r, echo=FALSE}
+weights_full<- c(0.4, 0.25, 0.2, 0.15, 0.4, 0.25, 0.2, 0.15)
+
+
+full_weight_results_mens<- optim(par = weights_full, fn = mens_obj_fun, control = list(maxit=3000))
+
+print(full_weight_results_mens)
+```
+
+Here now are the optimization results from using Oliver's full weights on the women's data.
+
+```{r, echo=FALSE}
+full_weight_results_womens<- optim(par = weights_full, fn = womens_obj_fun, control = list(maxit=4000))
+
+print(full_weight_results_womens)
+```
+
+The coefficients for each statistic are listed in the \$par section of the output. In order they represent offensive eFG%, offensive TOV%, ORB%, offensive FTRte, opponent eFG%, opponent TOV%, DRB%, and opponent FTRte.
+
+The \$value section of the output gives us our mean square error for each model, and the \$counts section tells hows how many iterations it took for the function to converge to a solution.
+
+Finally, the \$convergence value of 0 tells us that the optim() function did successfully converge to a solution.
+
+### Half-Weight Results
+
+Now for testing with cutting the weights in half to account for the fact that there is shooting, rebounding, turnover, and free throws on both ends of the floor.
+
+These are the results of the optimization function with the men's data.
+
+```{r, echo=FALSE}
+weights_half<- c(0.2, 0.125, 0.1, 0.075, 0.2, 0.125, 0.1, 0.075)
+
+half_weight_results_mens<- optim(par = weights_half, fn = mens_obj_fun, control = list(maxit=4000))
+
+print(half_weight_results_mens)
+```
+
+And here are the results of the optimization function for the women's data, starting with half of Oliver's suggested weights as parameters.
+
+```{r}
+half_weight_results_womens<- optim(par = weights_half, fn = womens_obj_fun, control = list(maxit=5000))
+
+print(half_weight_results_womens)
+```
+
+# Comparisons
+
+Now that we have a couple of different models to work with, given the coefficients from the optim() function, we can start to look at which is the most accurate.
+
+We'll do this by creating a new data frame with all of the actual Win/Loss% for each team and the predicted Win/Loss that each model gives us. When we have all of that together we can look at how our residuals are plotted out and it will allow for easy visualization of model performance.
+
+## Residuals
+
+```{r, echo=FALSE}
+weights_full_pred_mens <- full_weight_results_mens$par
+
+weights_half_pred_mens <- half_weight_results_mens$par
+
+
+predicted_wl_full_mens<- (weights_full_pred_mens[1] * mens_stats$scaled_tmefg) +
+                      (weights_full_pred_mens[2] * mens_stats$scaled_tmtovrte) +
+                      (weights_full_pred_mens[3] * mens_stats$scaled_orbrte) +
+                      (weights_full_pred_mens[4] * mens_stats$scaled_tmftrte) +
+                      (weights_full_pred_mens[5] * mens_stats$scaled_oppefg) +
+                      (weights_full_pred_mens[6] * mens_stats$scaled_opptovrte) +
+                      (weights_full_pred_mens[7] * mens_stats$scaled_drbrte) +
+                      (weights_full_pred_mens[8] * mens_stats$scaled_oppftrte)
+
+predicted_wl_half_mens <- (weights_half_pred_mens[1] * mens_stats$scaled_tmefg) +
+                      (weights_half_pred_mens[2] * mens_stats$scaled_tmtovrte) +
+                      (weights_half_pred_mens[3] * mens_stats$scaled_orbrte) +
+                      (weights_half_pred_mens[4] * mens_stats$scaled_tmftrte) +
+                      (weights_half_pred_mens[5] * mens_stats$scaled_oppefg) +
+                      (weights_half_pred_mens[6] * mens_stats$scaled_opptovrte) +
+                      (weights_half_pred_mens[7] * mens_stats$scaled_drbrte) +
+                      (weights_half_pred_mens[8] * mens_stats$scaled_oppftrte)
+
+
+comparison_df_mens <- data.frame(
+  team = mens_stats$Team,
+  Actual_mens = mens_stats$`W-L%`,       
+  PredictedFullHold_mens = predicted_wl_full_mens,    
+  PredictedHalfHold_mens = predicted_wl_half_mens
+)
+
+comparison_df_mens<- comparison_df_mens |>
+  mutate("PredictedFullMens" = PredictedFullHold_mens + mean(mens_stats$`W-L%`),
+         "PredictedHalfMens" = PredictedHalfHold_mens + mean(mens_stats$`W-L%`))
+
+comparison_df_mens<- comparison_df_mens |>
+  mutate("residuals_full_mens" = Actual_mens - PredictedFullMens,
+         "residuals_half_mens" = Actual_mens - PredictedHalfMens)
+
+#####################################################################################
+weights_full_pred_womens<- full_weight_results_womens$par
+weights_half_pred_womens<- half_weight_results_womens$par
+
+
+predicted_wl_full_womens<- (weights_full_pred_womens[1] * womens_stats$scaled_tmefg) +
+                      (weights_full_pred_womens[2] * womens_stats$scaled_tmtovrte) +
+                      (weights_full_pred_womens[3] * womens_stats$scaled_orbrte) +
+                      (weights_full_pred_womens[4] * womens_stats$scaled_tmftrte) +
+                      (weights_full_pred_womens[5] * womens_stats$scaled_oppefg) +
+                      (weights_full_pred_womens[6] * womens_stats$scaled_opptovrte) +
+                      (weights_full_pred_womens[7] * womens_stats$scaled_drbrte) +
+                      (weights_full_pred_womens[8] * womens_stats$scaled_oppftrte)
+
+predicted_wl_half_womens <- (weights_half_pred_womens[1] * womens_stats$scaled_tmefg) +
+                      (weights_half_pred_womens[2] * womens_stats$scaled_tmtovrte) +
+                      (weights_half_pred_womens[3] * womens_stats$scaled_orbrte) +
+                      (weights_half_pred_womens[4] * womens_stats$scaled_tmftrte) +
+                      (weights_half_pred_womens[5] * womens_stats$scaled_oppefg) +
+                      (weights_half_pred_womens[6] * womens_stats$scaled_opptovrte) +
+                      (weights_half_pred_womens[7] * womens_stats$scaled_drbrte) +
+                      (weights_half_pred_womens[8] * womens_stats$scaled_oppftrte)
+
+comparison_df_womens<- data.frame(
+  team = womens_stats$Team,
+  actual_womens = womens_stats$`W-L%`,
+  predicted_full_womens_hold = predicted_wl_full_womens,
+  predicted_half_womens_hold = predicted_wl_half_womens
+)
+
+comparison_df_womens<- comparison_df_womens |>
+  mutate(predicted_full_womens = predicted_full_womens_hold + mean(womens_stats$`W-L%`),
+         predicted_half_womens = predicted_half_womens_hold + mean(womens_stats$`W-L%`),
+         "residuals_full_womens" = actual_womens - predicted_full_womens,
+         "residuals_half_womens" = actual_womens - predicted_half_womens
+)
+
+full_residuals_mens<- ggplot() +
+  geom_point(aes(x = comparison_df_mens$Actual_mens, y = comparison_df_mens$residuals_full_mens), color = "blue", size = 1.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  theme_minimal() +
+  labs(title = "WL% Residuals - Men's",
+       subtitle = "Full Weight",
+       x = "Acutal WL%",
+       y = "Residuals")
+  
+half_residuals_mens<- ggplot() +
+  geom_point(aes(x = comparison_df_mens$Actual_mens, y = comparison_df_mens$residuals_half_mens), color = "red", size = 1.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +  
+  labs(x = "Actual WL%",
+       y = "Residuals",
+       subtitle = "Half Weight",
+       title = "") +
+  theme_minimal()
+#####################################################################################
+full_residuals_womens<- ggplot() +
+  geom_point(aes(x = comparison_df_womens$actual_womens, y = comparison_df_womens$residuals_full_womens), color = "darkgreen", size = 1.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + 
+  theme_minimal() +
+  labs(title = "WL% Residuals - Women's",
+       subtitle = "Full Weight",
+       x = "Acutal WL%",
+       y = "Residuals")
+
+half_residuals_womens<- ggplot() +
+  geom_point(aes(x = comparison_df_womens$actual_womens, y = comparison_df_womens$residuals_half_womens), color = "orange", size = 1.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + 
+  theme_minimal() +
+  labs(title = "",
+       subtitle = "Half Weight",
+       x = "Acutal WL%",
+       y = "Residuals")
+
+grid.arrange(full_residuals_mens, half_residuals_mens, full_residuals_womens, half_residuals_womens, nrow=2, ncol=2)
+
+```
+
+These are encouraging results. Our goal is that our residuals (the difference between our actual and estimated results) are randomly distributed and centered around 0, which we do see. This is important because it shows that our model is not auto-correlating and that the error in the model is random, rather than being assigned to one factor[@fernandezresiduals].
+
+## Actual vs. Predicted
+
+```{r, echo=FALSE}
+
+full_comp_mens<- ggplot(comparison_df_mens, aes(x = Actual_mens)) +
+  geom_point(aes(y = PredictedFullMens), color = "blue", size = 1.5) + 
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "black") +
+  theme_minimal() +
+  labs(title = "Actual vs Predicted WL% - Mens",
+       x = "Actual WL%",
+       y = "Predicted WL%",
+       subtitle = "Full Weight",
+       caption = "R-Squared - 0.7505")
+  
+half_comp_mens<- ggplot(comparison_df_mens, aes(x = Actual_mens)) +
+  geom_point(aes(y = PredictedHalfMens), color = "red", size = 1.5) +   
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "black") +  
+  labs(x = "Actual WL%",
+       y = "Predicted WL%",
+       subtitle = "Half Weight",
+       title = "",
+       caption = "R-Squared - 0.7549") +
+  theme_minimal()
+
+full_comp_womens<- ggplot(comparison_df_womens, aes(x = actual_womens)) +
+  geom_point(aes(y = predicted_full_womens), color = "darkgreen", size = 1.5) + 
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "black") +
+  theme_minimal() +
+  labs(title = "Actual vs Predicted WL% - Womens",
+       x = "Actual WL%",
+       y = "Predicted WL%",
+       subtitle = "Full Weight",
+       caption = "R-Squared - 0.8793")
+  
+half_comp_womens<- ggplot(comparison_df_womens, aes(x = actual_womens)) +
+  geom_point(aes(y = predicted_half_womens), color = "orange", size = 1.5) +   
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "black") +  
+  labs(x = "Actual WL%",
+       y = "Predicted WL%",
+       subtitle = "Half Weight",
+       title = "",
+       caption = "R-Squared - 0.6736") +
+  theme_minimal()
+
+grid.arrange(full_comp_mens, half_comp_mens, full_comp_womens, half_comp_womens, nrow = 2, ncol=2)
+
+RSS_full_mens <- sum((comparison_df_mens$residuals_full_mens)^2)
+RSS_half_mens <- sum((comparison_df_mens$residuals_half_mens)^2)
+tss_mens<- sum((comparison_df_mens$Actual_mens - mean(comparison_df_mens$Actual_mens))^2)
+
+RSquared_full_mens<- 1 - (RSS_full_mens / tss_mens)
+RSquared_half_mens<- 1 - (RSS_half_mens / tss_mens)
+
+RSS_full_womens<- sum((comparison_df_womens$residuals_full_womens)^2)
+RSS_half_womens<- sum((comparison_df_womens$residuals_half_womens)^2)
+tss_womens<- sum((comparison_df_womens$actual_womens - mean(comparison_df_womens$actual_womens))^2)
+
+RSquared_full_womens<- 1 - (RSS_full_womens / tss_womens)
+RSquared_half_womens<- 1 - (RSS_half_womens / tss_womens)
+
+#cat("RSquared Full Mens", RSquared_full_mens, "\n")
+#cat("RSquared Half Mens", RSquared_half_mens, "\n")
+#cat("\n")
+#cat("RSquared Full Womens", RSquared_full_womens, "\n")
+#cat("RSquared Half Womens", RSquared_half_womens)
+```
+
+These plots here, along with their captioned R-Squared values, give us a good idea of how accurate each model is. The two men's models are roughly equally accurate, with both having R-Squared values around 0.75. However, the two women's models vary drastically, with the model that started with Oliver's full weights as parameters having an R-Squared value of 0.8793 and the model that started with the half-weights having an R-Squared value of 0.6736. So, of the four that we have, the women's model is certainly the most accurate.
+
+While that R-Squared value isn't terrible, I would like to see if we can get a little bit more accurate by developing some alternate models.
+
+# Alternate Model - Lasso Regression
+
+To see if we can improve the performance of our two models, we'll try throwing all of the same data into a LASSO Regression model. LASSO stands for Least Absolute Shrinkage and Selection Operator, and it serves as a way to reduce the error found in a model. It does this by applying a regularization process wherein variables that are less important to the model have their coefficients shrunk down - possibly to the point where they are removed from the model completely[@fontilasso].
+
+This particular LASSO model comes out of the Caret library for R.
+
+```{r}
+set.seed(7560)
+
+train_control<- trainControl(method = "repeatedcv", number = 20, repeats = 5)
+
+womens_lasso<- train(`W-L%` ~ scaled_tmefg + scaled_tmtovrte + scaled_orbrte + scaled_tmftrte + scaled_oppefg + scaled_opptovrte + scaled_drbrte + scaled_oppftrte, data = womens_stats, method = "lm", trControl = train_control)
+
+summary(womens_lasso)
+
+```
+
+First off we have the women's LASSO model. The coefficients for the model are given in the "Estimate" column, and each variables respective p-value is given in the "Pr(\>\|t\|)" column. The R-squared value for this model is 0.9053. So, we managed to improve this just a little bit from our previous models.
+
+```{r}
+mens_lasso<- train(`W-L%` ~ scaled_tmefg + scaled_tmtovrte + scaled_orbrte + scaled_tmftrte + scaled_oppefg + scaled_opptovrte + scaled_drbrte + scaled_oppftrte, data = mens_stats, method = "lm", trControl = train_control)
+
+summary(mens_lasso)
+```
+
+Next, we have the men's LASSO model, and this improved quite a bit from our original models. We managed to get our R-Squared value up from around 0.75 to now 0.8733.
+
+Following our pattern from our first models, let's take a look at the residuals of each model.
+
+```{r}
+mens_lasso_predict<- predict(mens_lasso, mens_stats)
+mens_actual<- mens_stats$`W-L%`
+mens_lasso_resid<- mens_lasso_predict - mens_actual
+
+womens_lasso_predict<- predict(womens_lasso, womens_stats)
+womens_actual<- womens_stats$`W-L%`
+womens_lasso_resid<- womens_lasso_predict - womens_actual
+
+mens_lasso_comp<- data.frame(
+  team = mens_stats$Team,
+  actual = mens_stats$`W-L%`,
+  predicted = mens_lasso_predict,
+  resid = mens_lasso_resid
+)
+
+womens_lasso_comp<- data.frame(
+  team = womens_stats$Team,
+  actual = womens_stats$`W-L%`,
+  predicted = womens_lasso_predict,
+  resid = womens_lasso_resid
+)
+
+mens_lasso_resid_plot<- ggplot() + 
+  geom_point(aes(x = mens_actual, y = mens_lasso_resid), color = 'blue') + 
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_minimal() + 
+  labs(title = "Lasso Residual Plots",
+       subtitle = "Men's Lasso",
+       x = "Actual W/L%",
+       y = "Residuals")
+
+womens_lasso_resid_plot<- ggplot() +
+  geom_point(aes(x = womens_actual, y = womens_lasso_resid), color = 'red') +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_minimal() +
+  labs(title = "",
+       subtitle = "Women's Lasso",
+       x = "Actual W/L%",
+       y = "Residuals")
+
+grid.arrange(mens_lasso_resid_plot, womens_lasso_resid_plot, ncol = 2, nrow = 1)
+```
+
+Again, we see that our residuals are random and centered around 0. It looks like there is a slight pattern to the men's residuals, but not enough to warrant concern.
+
+```{r, echo=FALSE, warning=FALSE}
+mens_act_pred<- ggplot() +
+  geom_point(aes(x = mens_actual, y = mens_lasso_predict), color = "blue") +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
+  theme_minimal() +
+  ylim(0, 1.08) +
+  xlim(0, 1) +
+  labs(title = "Actual vs Predicted Lasso Results",
+       subtitle = "Men's Lasso",
+       x = "Actual W/L%",
+       y = "Predicted W/L%")
+
+womens_act_pred<- ggplot() +
+  geom_point(aes(x = womens_actual, y = womens_lasso_predict), color = "red") +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
+  theme_minimal() +
+  ylim(0, 1.08) +
+  xlim(0, 1) +
+  labs(title = "",
+       subtitle = "Women's Lasso",
+       x = "Actual W/L%",
+       y = "Predicted W/L%")
+
+grid.arrange(mens_act_pred, womens_act_pred, ncol = 2, nrow = 1)
+```
+
+As we can see here, we have a pretty good fit for predicting win/loss percentage using Dean Oliver's Four Factors. Both models have a good linear pattern to them with no significant outliers.
+
+# Analysis
+
+## Hypothesis on Why the Women's Models Fit Better
+
+Something that stood out to me as I was working on this project was that the models predicting win-loss percentage for women's basketball consistently fit better than the models trying to predict men's basketball. While there is almost certainly not a single factor that leads to this phenomenon, I have a theory on what may be a strong contributing factor: net team efficiency.
+
+Offensive and defensive efficiency measure how many points a team scores or allows over the course of 100 possessions. Net team efficiency, then, is the difference between the two - positive if you score more, negative if you allow more. Looking at the distribution of net team ratings will tell us how spread out the data is.
+
+```{r}
+mens_net_dist<- ggplot(data = mens_stats, aes(x = TmNetRtg)) +
+  geom_density(fill = 'lightblue') +
+  ylim(0, .042) +
+  xlim(-45, 45) +
+  theme_minimal() +
+  labs(title = "Distribution of Net Team Rating",
+       subtitle = "Men's Basketball",
+       x = "Net Team Rating")
+
+womens_net_dist<- ggplot(data = womens_stats, aes(x = TmNetRtg)) +
+  geom_density(fill = 'lightgreen') +
+  ylim(0, .042) +
+  xlim(-45, 45) +
+  theme_minimal() +
+  labs(title = "",
+       subtitle = "Women's Basketball",
+       x = "Net Team Rating")
+
+grid.arrange(mens_net_dist, womens_net_dist)
+```
+
+What we find is that there is far more variance in the women's data than there is in the men's data. Men's teams are much more centered around 0 when compared to the women's data, which has huge tails on either side. In fact, net team rating among men's teams has a standard deviation of 10.09, while the standard deviation among women's teams is 13.37.
+
+You might be saying to yourself, "but wait, net team efficiency isn't a variable in our models. What does this have to do with anything?" What this tells me is that overall, men's teams are much more similar to each other than women's teams are. Therefore, on a game to game basis, we would be much more likely to see an "upset" in men's basketball than in women's basketball, which affects the target variable of our models.
+
+Further, if the men's teams are more similar to each other than women's teams are, it makes it more difficult to sort out who would have a higher winning percentage and make predictions.
+
+Again, this is simply a hypothesis, and there are dozens of factors that can affect why the women's data fit our model better. However, I believe this is a good place to start for explaining the differences.
+
+## Predictions of Postseason Success
+
+The ultimate goal of a model like this would be to try and predict which teams will make it the farthest in the March Madness tournament at the end of the season. March Madness, at least on the men's side, often gets a reputation of being a tournament where anyone can beat anyone. On a single-game basis that may be true, but 92% of all NCAA men's basketball champions were seeded 1-4. So, over the course of a full tournament, we would expect the best teams (teams that are most effective in the Four Factors) to rise to the top.
+
+The women's game is even more stratified if we look at teams that advance to the Final Four. Only four times in history has a team seeded higher than 5 advanced to the Final Four, and no team seeded higher than 3 has ever won the national championship. To that end, I would expect these models to predict post-season success fairly accurately.
+
+Seeing as the two Lasso regressions had the highest R-Squared values, let's look at how they predict postseason success.
+
+```{r}
+library(ggrepel)
+
+mens_final_four_teams<- mens_lasso_comp |>
+  filter(team %in% c("Connecticut", "Alabama", "Purdue", "NC State"))
+
+womens_final_four_teams<- womens_lasso_comp |>
+  filter(team %in% c("South Carolina", "Iowa", "NC State", "Connecticut"))
+
+mens_final_four_hl<- ggplot() +
+  geom_point(data = mens_lasso_comp, aes(x = actual, y = predicted), color = "grey") + geom_point(data = mens_final_four_teams, aes(x = actual, y = predicted), color = "red", size = 2.5) +
+  geom_text_repel(data = mens_final_four_teams, aes(x = actual, y = predicted, label = team)) +
+  theme_minimal()+
+  labs(title = "Lasso Projections of Final Four Teams",
+       subtitle = "Men's Final Four Teams",
+       x = "Actual W/L%",
+       y = "Lasso Predicted W/L%")
+
+womens_final_four_hl<- ggplot() +
+  geom_point(data = womens_lasso_comp, aes(x = actual, y = predicted), color = "grey") + geom_point(data = womens_final_four_teams, aes(x = actual, y = predicted), color = "red", size = 2.5) +
+  geom_text_repel(data = womens_final_four_teams, aes(x = actual, y = predicted, label = team)) +
+  theme_minimal() +
+  labs(title = "",
+       subtitle = "Women's Final Four Teams",
+       x = "Actual W/L%",
+       y = "Lasso Predicted W/L%")
+grid.arrange(mens_final_four_hl, womens_final_four_hl, nrow = 1, ncol = 2)
+  
+```
+
+Here we have the same charts from above plotting actual winning percentage against projected win percentage, but this time with the teams that made the Final Four marked in red. Again we see that our women's model does a better job of predicting success. However, something to note is that the eventual national champions for both the men's and the women's tournaments were in the top-2 for predicted winning percentage (South Carolina was tops in women's basketball, UConn was second in men's basketball, led only by McNeese State).
+
+# Conclusions
+
+## On The Models
+
+I think that this model turned out to be a pretty good starting point for trying to predict the overall success of a basketball team. For the original goal of recreating SP+ for basketball using Dean Oliver's Four Factors, we got solid results measuring \>87% of the variance in team performance for both men's and women's basketball.
+
+There is almost certainly a way to make a model that improves these R-Squared values to even more accurately predict team success. Further research would, of course, need to be done. I think an interesting factor to add would be specifically trying to predict post-season success. Adding binary variables for which round of March Madness each team advanced to could give us interesting insight into what makes a team "championship caliber". Whereas in this model we were solely looking at winning percentage and not post season success, that sort of model could help fans know which teams to keep their eyes on come March Madness.
+
+## Personal Reflections
+
+I was a little disappointed while working on this project that the models I wrote myself did not turn out to be as accurate as I would have liked. I had hoped that optimizing the weights and writing out the objective functions would give better results, mostly from a pride aspect. Data science is not always that clean.
+
+I am grateful, however, for the vast libraries available from which to pull in machine learning models. The Caret package gave great results with which I am pleased.
+
+Overall, it was a great learning experience to go through the full process of building a model. From starting out with a goal in mind, finding road blocks along the way, and utilizing resources to overcome those obstacles, I learned quite a bit about the data science process along the way and I am certain that these experiences will help me in future endeavors. In fact, I already have a couple of ideas for the next topics I would like to research.

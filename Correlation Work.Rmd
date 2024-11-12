@@ -1,0 +1,128 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggcorrplot)
+library(FactoMineR)
+```
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+mens_opp <- read_csv("C:/Users/bende/OneDrive/Desktop/DMACC Classes/Fall 2024/Honors Project/SP+ Basketball/Data Sets/2024_Mens_Opp_Stats.csv")
+mens_team <- read_csv("C:/Users/bende/OneDrive/Desktop/DMACC Classes/Fall 2024/Honors Project/SP+ Basketball/Data Sets/2024_Mens_Team_Stats.csv")
+womens_opp <- read_csv("C:/Users/bende/OneDrive/Desktop/DMACC Classes/Fall 2024/Honors Project/SP+ Basketball/Data Sets/2024_Womens_Opp_Stats.csv")
+womens_team <- read_csv("C:/Users/bende/OneDrive/Desktop/DMACC Classes/Fall 2024/Honors Project/SP+ Basketball/Data Sets/2024_Womens_Team_Stats.csv")
+
+mens_per_game<- read_csv("C:/Users/bende/OneDrive/Desktop/DMACC Classes/Fall 2024/Honors Project/SP+ Basketball/Data Sets/2024_Mens_PerGame_Team.csv")
+
+womens_per_game<- read_csv("C:/Users/bende/OneDrive/Desktop/DMACC Classes/Fall 2024/Honors Project/SP+ Basketball/Data Sets/2024_Womens_PerGame_Team.csv")
+
+mens_stats<- bind_cols(mens_team, mens_opp) 
+womens_stats<- bind_cols(womens_team, womens_opp)
+
+mens_stats<- mens_stats |>
+  select(-`School...25`) |>
+  rename("Team" = `School...1`)
+
+womens_stats<- womens_stats |>
+  select(-`School...24`) |>
+  rename("Team" = `School...1`) |>
+  mutate("G" = W + L)
+
+mens_numeric<- mens_stats |>
+  select(where(is.numeric), -W, -L)
+
+womens_numeric<- womens_stats |>
+  select(where(is.numeric), -W, -L)
+
+mens_normalize<- scale(mens_numeric)
+
+womens_normalize<- scale(womens_numeric)
+
+mens_pg_num<- mens_per_game |>
+  select(where(is.numeric))
+
+womens_pg_num<- womens_per_game |>
+  select(where(is.numeric))
+```
+
+```{r}
+mens_pca<- princomp(mens_normalize)
+
+summary(mens_pca)
+```
+```{r}
+mens_pca$loadings[, 1:8]
+```
+
+```{r}
+mens_cor_matrix<- cor(mens_numeric)
+
+mens_cor_df<- as.data.frame(mens_cor_matrix)
+```
+
+```{r}
+womens_cor_matrix<- cor(womens_numeric)
+
+womens_cor_df<- as.data.frame(womens_cor_matrix)
+```
+
+```{r}
+diff_cor_df<- mens_cor_df - womens_cor_df
+```
+
+```{r}
+for (col_name in names(diff_cor_df)) {
+  max_value <- max(abs(diff_cor_df[[col_name]]), na.rm = TRUE)
+  print(paste("Max value for", col_name, ":", max_value))
+}
+
+```
+
+```{r}
+for (col in names(mens_pg_num)) {
+  mens<- mens_pg_num[[col]]
+  womens<- womens_pg_num[[col]]
+  
+  t_test_result<- t.test(mens, womens)
+  
+  if (t_test_result$p.value < 0.05) {
+    cat("T-Test for", col, ": p-value =", t_test_result$p.value, "\n")
+  }
+}
+```
+
+```{r}
+cat("Mens:", mean(mens_per_game$ORB), sd(mens_per_game$ORB), "\n")
+cat("Womens:", mean(womens_per_game$ORB), sd(womens_per_game$ORB))
+```
+```{r}
+ggplot() +
+  geom_density(data = mens_per_game, aes(x = ORB), color = "blue") +
+  geom_density(data = womens_per_game, aes(x = ORB), color="red")
+```
+```{r}
+cat("Mens:", mean(mens_per_game$FT), sd(mens_per_game$FT), "\n")
+cat("Womens:", mean(womens_per_game$FT), sd(womens_per_game$FT))
+```
+
+```{r}
+ggplot() +
+  geom_density(data = mens_per_game, aes(x = FT), color = "blue") +
+  geom_density(data = womens_per_game, aes(x = FT), color="red")
+```
+```{r}
+cat("Mens:", mean(mens_per_game$`3PA`), sd(mens_per_game$`3PA`), "\n")
+cat("Womens:", mean(womens_per_game$`3PA`), sd(womens_per_game$`3PA`))
+```
+
+```{r}
+ggplot() +
+  geom_density(data = mens_per_game, aes(x = `3PA`), color = "blue") +
+  geom_density(data = womens_per_game, aes(x = `3PA`), color="red")
+
+```
+

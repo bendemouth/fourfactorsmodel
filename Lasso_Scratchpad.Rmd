@@ -1,0 +1,107 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+library(dplyr)
+library(tidyr)
+library(readr)
+library(ggplot2)
+library(gridExtra)
+library(caret)
+library(glmnet)
+```
+
+```{r}
+mens_opp <- read_csv("Data/2024_Mens_PerGame_Opp.csv")
+mens_team <- read_csv("Data/2024_Mens_PerGame_Team.csv")
+womens_opp <- read_csv("Data/2024_Womens_PerGame_Opp.csv")
+womens_team <- read_csv("Data/2024_Womens_PerGame_Team.csv")
+
+mens_stats<- bind_cols(mens_team, mens_opp) 
+womens_stats<- bind_cols(womens_team, womens_opp)
+
+mens_stats<- mens_stats |>
+  select(-`School...22`) |>
+  rename("Team" = `School...1`)
+
+womens_stats<- womens_stats |>
+  select(-`School...22`) |>
+  rename("Team" = `School...1`)
+```
+
+```{r}
+FT_COEFF<- 0.44
+
+mens_stats<- mens_stats |>
+  mutate("TmPoss" = (TmFGA - TmORB) + TmTOV + (FT_COEFF * TmFTA),
+         "OppPoss" = (OppFGA - OppORB) + OppTOV + (FT_COEFF * TmFTA),
+         "TmOffRtg" = (TmPts / TmPoss) * 100,
+         "TmDefRtg" = (OppPts / OppPoss) * 100,
+         "TmNetRtg" = TmOffRtg - TmDefRtg,
+         "TmeFG" = (TmFG + (Tm3P * 0.5)) / TmFGA,
+         "OppeFG" = (OppFG + (Opp3P * 0.5)) / OppFGA,
+         "TmFTRte" = TmFTA / TmFGA,
+         "OppFTRte" = OppFTA / OppFGA,
+         "TmTOVRte" = TmTOV / TmPoss,
+         "OppTOVRte" = OppTOV / OppPoss,
+         "TmDRB" = TmTRB - TmORB,
+         "OppDRB" = OppTRB - OppORB,
+         "ORBRte" = TmORB / (TmORB + OppDRB),
+         "DRBRte" = TmDRB / (OppORB + TmDRB),
+         "TmASTRte" = TmAST / TmPoss,
+         "OppASTRte" = OppAST / OppPoss)
+
+womens_stats<- womens_stats |>
+  mutate("TmPoss" = (TmFGA - TmORB) + TmTOV + (FT_COEFF * TmFTA),
+         "OppPoss" = (OppFGA - OppORB) + OppTOV + (FT_COEFF * TmFTA),
+         "TmOffRtg" = (TmPts / TmPoss) * 100,
+         "TmDefRtg" = (OppPts / OppPoss) * 100,
+         "TmNetRtg" = TmOffRtg - TmDefRtg,
+         "TmeFG" = (TmFG + (Tm3P * 0.5)) / TmFGA,
+         "OppeFG" = (OppFG + (Opp3P * 0.5)) / OppFGA,
+         "TmFTRte" = TmFT / TmFGA,
+         "OppFTRte" = OppFT / OppFGA,
+         "TmTOVRte" = TmTOV / TmPoss,
+         "OppTOVRte" = OppTOV / OppPoss,
+         "TmDRB" = TmTRB - TmORB,
+         "OppDRB" = OppTRB - OppORB,
+         "ORBRte" = TmORB / (TmORB + OppDRB),
+         "DRBRte" = TmDRB / (OppORB + TmDRB),
+         "TmASTRte" = TmAST / TmPoss,
+         "OppASTRte" = OppAST / OppPoss)
+```
+
+```{r}
+target_var<- womens_stats$`W-L%`
+
+x_var<- data.matrix(womens_stats[, c("TmeFG", "OppeFG", "TmTOVRte", "OppTOVRte", "TmFTRte", "OppFTRte", "ORBRte", "DRBRte")])
+```
+
+```{r}
+cv_model<- cv.glmnet(x_var, target_var, alpha = 1)
+
+best_lambda<- cv_model$lambda.min
+
+print(best_lambda)
+```
+```{r}
+plot(cv_model)
+```
+```{r}
+best_model<- glmnet(x_var, target_var, alpha = 1, lambda = best_lambda)
+
+coef(best_model)
+```
+
+```{r}
+predictions<- predict(best_model, s = best_lambda, newx = x_var)
+
+tss<- sum((target_var - mean(target_var))^2)
+rss<- sum((predictions - target_var)^2)
+
+rsq<- 1 - (rss / tss)
+
+print(rsq)
+```
+
