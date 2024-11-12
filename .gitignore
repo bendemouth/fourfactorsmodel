@@ -1,2 +1,8 @@
 #Ignore notebook html files
 *.nb.html
+
+#Ignore RData
+.RData
+
+#Ignore RHistory
+.Rhistor
