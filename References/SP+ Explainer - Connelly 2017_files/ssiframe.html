@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<!-- saved from url=(0768)https://crcldu.com/mg/ssiframe.html#pb_url=https%3A%2F%2Fs.update.adsrvr.org%2F2%2F2.148.0%2F357427%2FAxmuBAACBIOLDJZU%2Fpostback%3Fpv%3Dbb1a7ef4-00c8-4203-ac4a-a7c4f547b4d8%26ac%3Dwg69brn%26pd%3Davt%26cb%3D1731384562%26ui%3D%26ap%3D%26dt%3D3574271504888517674019%26pp%3D183789%26r7%3D%26md%3D1%26sr%3Dcasale%26ci%3D357427%26dm%3D300x250%26di%3Dwww.sbnation.com%26ti%3D140b066c-c525-40a5-b417-8d20979ce870%26to%3D3%26de%3D2%26sid%3DAxmuBAACBIOLDJZU%26oz_sc%3D6136c4297ccbb2b8f908b4cc%26oz_df%3D1731384568577%26oz_l%3D2%26ac%3Dwg69brn%26pd%3Davt%26cb%3D1731384562%26ui%3D%26ap%3D%26dt%3D3574271504888517674019%26pp%3D183789%26r7%3D%26md%3D1%26sr%3Dcasale%26ci%3D357427%26dm%3D300x250%26di%3Dwww.sbnation.com%26ti%3D140b066c-c525-40a5-b417-8d20979ce870%26to%3D3%26de%3D2 -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><script src="chrome-extension://ajdpfmkffanmkhejnopjppegokpogffp/assets/prompt.js"></script></head><body>
+<script>
+// Get URL supporting both search and hash
+const urlFragment = location.hash ? location.hash : location.search ? location.search : null;
+const urlParams = urlFragment ? new URLSearchParams(urlFragment.substring(1)) : null;
+const postbackUrl = escape(urlParams.get("pb_url"));
+
+
+async function deviceAge(pd) {
+  const postbackURLs = [];
+  const timeSlots = ["def", "new", "hour", "day", "week", "month", "quarter", "halfyear"];
+  timeSlots.forEach((slot) => postbackURLs.push({url: "postback.html#" + pd + "_timeblock=" + slot + "&pb_url=" + postbackUrl}));
+  
+  try {
+    if (pd === "fs") {
+      sharedStorage.set("ts", Date.now(), {ignoreIfPresent: true}).catch((_e) => {return});
+      await window.sharedStorage.worklet.addModule("ss.js");
+    }
+    const resolveToConfig = window.FencedFrameConfig !== void 0;
+    let opaqueURL = await window.sharedStorage.selectURL(pd, postbackURLs, {resolveToConfig, keepAlive:true, data:{pd : pd}});
+    if (resolveToConfig && opaqueURL instanceof FencedFrameConfig) document.body.appendChild(Object.assign(document.createElement('fencedframe'), {mode: 'opaque-ads', config: opaqueURL}));
+  }
+  catch(e){}
+}
+
+async function main()
+{
+  if (postbackUrl) {
+    await deviceAge("fs");
+    await deviceAge("bd");
+    setTimeout(() => {document.body.replaceChildren()}, 4000);
+  }
+}
+main();
+
+</script>
+</body></html>
