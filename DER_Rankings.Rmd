@@ -245,7 +245,7 @@ Now that we have established that our data are normally distributed, a note on m
 
 To demonstrate, Texas A&M led men's basketball in offensive rebounding rate at 42.25%. Meanwhile, St. Mary's led men's basketball in defensive rebounding rate at 77.93%. Both of these are rebounding statistics and tops in the same division. However, those numbers are nowhere near each other.
 
-Therefore, we need to scale our data. We scale these by finding the mean of each statistic and finding out out how many standard deviations away from the mean each observation is. In statistics, this is also known as finding the Z-Score.
+Therefore, we need to scale our data. We scale these by finding the mean of each statistic and finding out how many standard deviations away from the mean each observation is. In statistics, this is also known as finding the Z-Score.
 
 The first ten teams are listed alphabetically below with their scaled data in each category.
 
@@ -607,7 +607,9 @@ RSquared_half_womens<- 1 - (RSS_half_womens / tss_womens)
 #cat("RSquared Half Womens", RSquared_half_womens)
 ```
 
-These plots here, along with their captioned R-Squared values, give us a good idea of how accurate each model is. The two men's models are roughly equally accurate, with both having R-Squared values around 0.75. However, the two women's models vary drastically, with the model that started with Oliver's full weights as parameters having an R-Squared value of 0.8793 and the model that started with the half-weights having an R-Squared value of 0.6736. So, of the four that we have, the women's model is certainly the most accurate.
+To evaluate the accuracy of these models, we'll use R-Squared values. R-Squared is a value that tells us what percent of the variance in the data is captured by our model.
+
+These plots help us to visualize how much variance is captured by the model as well. The two men's models are roughly equally accurate, with both having R-Squared values around 0.75. However, when comparing the two women's models the difference is much more stark. The model that used the half weights has a much lower R-Squared value at 0.6736, while the full-weight model has the highers R-Squared value of the four at 0.8793.
 
 While that R-Squared value isn't terrible, I would like to see if we can get a little bit more accurate by developing some alternate models.
 
